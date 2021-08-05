@@ -11,15 +11,13 @@ loadRoot('assets/')
 
 sprites = ['backdrop', 'chip', 'click', 'dice', 'lightning', 'shop', 'steak', 'checkmark', 'checkmark_on', 'checkmark_clicked']
 audios = ['click', 'play', 'startup', 'upgrade']
-buttons = ['back', 'changelog', 'gear', 'play', 'up', 'down', 'upgrade']
+buttons = ['back', 'changelog', 'gear', 'play', 'up', 'down', 'upgrade', 'reset', 'yes', 'no']
 
 sprites.forEach((name) => {loadSprite(name, 'imgs/' + name + '.png')})
 buttons.forEach((name) => {loadSprite(name, 'imgs/' + name + '.png'); loadSprite(name + 'Hover', 'imgs/' + name + '_hover.png')})
 audios.forEach((name) => {loadSound(name, 'auds/' + name + '.wav')})
 
 loadFont('Mono', 'imgs/mono.png', 32, 64, " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~©")
-
-console.log(width() + 'x' + height())
 
 // Splash screen
 scene('splash', () => {
@@ -99,8 +97,9 @@ scene('menu', () => {
     if (changelogBtn.isClicked()) {go('changelog')}
   })
 
-  if (Utils.readObject('ranGame') === null) {
-    Utils.saveObject('ranGame', true)
+  if (Utils.readObject('didRunGame') === null) {
+    Utils.removeObject('ranGame')
+    Utils.saveObject('didRunGame', true)
     Utils.saveObject('coinCount', 10)
     Utils.saveObject('diceCount', 10)
     Utils.saveObject('showDice', true)
@@ -111,6 +110,7 @@ scene('menu', () => {
     Utils.saveObject('cPrice', 100)
     Utils.saveObject('aPrice', 150)
     Utils.saveObject('uPrice', 500)
+    Utils.saveObject('hover', false)
   }
 
   add(['menuLooper'])
@@ -124,6 +124,32 @@ scene('menu', () => {
     
     if (playBtn.isHovered()) {playBtn.changeSprite('playHover')}
     else {playBtn.changeSprite('play')}
+  })
+})
+
+scene('changelog', () => {
+  back = add([
+    sprite('back'),
+    pos(width() * 0.03, width() * 0.03),
+    scale(width() / 1920 * 0.8),
+    origin('topleft')
+  ])
+
+  add([
+    text('v1.0-beta1\nChangelog', 48),
+    pos(width() / 2, height() / 2),
+    origin('center')
+  ])
+
+  mouseClick(() => {
+    if (back.isClicked()) {go('menu')}
+  })
+
+  add(['changelogLooper'])
+
+  action('changelogLooper', _ => {
+    if (back.isHovered()) {back.changeSprite('backHover')}
+    else {back.changeSprite('back')}
   })
 })
 
@@ -143,39 +169,39 @@ scene('settings', () => {
 
   add([
     text('Show Coin Particles', width() / 1920 * 26),
-    pos(width() * 0.2, height() * 0.4),
+    pos(width() * 0.23, height() * 0.4),
     origin('left')
   ])
 
   add([
     text('Show Dice Particles', width() / 1920 * 26),
-    pos(width() * 0.2, height() * 0.475),
+    pos(width() * 0.23, height() * 0.475),
     origin('left')
   ])
 
   add([
     text('Coin Particles Limit', width() / 1920 * 26),
-    pos(width() * 0.2, height() * 0.55),
+    pos(width() * 0.23, height() * 0.55),
     origin('left')
   ])
 
   add([
     text('Dice Particles Limit', width() / 1920 * 26),
-    pos(width() * 0.2, height() * 0.625),
+    pos(width() * 0.23, height() * 0.625),
     origin('left')
   ])
 
   coinMark = add([
     sprite('checkmark'),
     pos(width() * 0.75, height() * 0.4),
-    scale(1080 / height() * 0.7),
+    scale(Math.min(height() / 1080 * 0.7, width() / 1920 * 0.6)),
     origin('right')
   ])
-
+  
   diceMark = add([
     sprite('checkmark'),
     pos(width() * 0.75, height() * 0.475),
-    scale(1080 / height() * 0.7),
+    scale(Math.min(height() / 1080 * 0.7, width() / 1920 * 0.6)),
     origin('right')
   ])
 
@@ -188,14 +214,14 @@ scene('settings', () => {
   coinUp = add([
     sprite('up'),
     pos(width() * 0.75, height() * 0.545),
-    scale(height() / 1080 * 0.35),
+    scale(Math.min(height() / 1080 * 0.35, width() / 1920 * 0.5)),
     origin('botright')
   ])
 
   coinDown = add([
     sprite('down'),
     pos(width() * 0.75, height() * 0.555),
-    scale(height() / 1080 * 0.35),
+    scale(Math.min(height() / 1080 * 0.35, width() / 1920 * 0.5)),
     origin('topright')
   ])
   
@@ -208,19 +234,27 @@ scene('settings', () => {
   diceUp = add([
     sprite('up'),
     pos(width() * 0.75, height() * 0.62),
-    scale(height() / 1080 * 0.35),
+    scale(Math.min(height() / 1080 * 0.35, width() / 1920 * 0.5)),
     origin('botright')
   ])
 
   diceDown = add([
     sprite('down'),
     pos(width() * 0.75, height() * 0.63),
-    scale(height() / 1080 * 0.35),
+    scale(Math.min(height() / 1080 * 0.35, width() / 1920 * 0.5)),
     origin('topright')
+  ])
+
+  reset = add([
+    sprite('reset'),
+    pos(width() * 0.5, height() * 0.8),
+    scale(width() / 1920 * 1.5),
+    origin('center')
   ])
   
   mouseClick(() => {
     if (back.isClicked()) {go('menu')}
+    if (reset.isClicked()) {go('reset')}
 
     if (coinUp.isClicked()) {Utils.saveObject('coinCount', Utils.readObject('coinCount') + 1)}
     if (coinDown.isClicked()) {Utils.saveObject('coinCount', Utils.readObject('coinCount') - 1)}
@@ -233,6 +267,9 @@ scene('settings', () => {
   action('settingsLooper', _ => {
     if (back.isHovered()) {back.changeSprite('backHover')}
     else {back.changeSprite('back')}
+
+    if (reset.isHovered()) {reset.changeSprite('resetHover')}
+    else {reset.changeSprite('reset')}
     
     if (coinMark.isHovered()) {coinMark.color = rgba(1, 1, 1, 0.8)}
     else {coinMark.color = rgba(1, 1, 1, 1,)}
@@ -265,29 +302,44 @@ scene('settings', () => {
   })
 })
 
-scene('changelog', () => {
-  back = add([
-    sprite('back'),
-    pos(width() * 0.03, width() * 0.03),
-    scale(width() / 1920 * 0.8),
-    origin('topleft')
+scene('reset', () => {
+  add([
+    text('Are you sure you want to reset?', width() / 1920 * 45),
+    pos(width() / 2, height() * 0.3),
+    origin('center'),
+    color(rgb(1, 0.411, 0.470))
   ])
 
-  add([
-    text('v1.0-beta1\nChangelog', 48),
-    pos(width() / 2, height() / 2),
+  yes = add([
+    sprite('yes'),
+    scale(width() / 1920 * 2),
+    pos(width() * 0.4, height() * 0.6),
     origin('center')
-  ])
+  ])  
+
+  no = add([
+    sprite('no'),
+    scale(width() / 1920 * 2),
+    pos(width() * 0.6, height() * 0.6),
+    origin('center')
+  ])  
 
   mouseClick(() => {
-    if (back.isClicked()) {go('menu')}
+    if (no.isClicked()) {go('settings')}
+    if (yes.isClicked()) {
+      Utils.removeObject('didRunGame')
+      go('settings')
+    }
   })
 
-  add(['changelogLooper'])
+  add(['resetLooper'])
 
-  action('changelogLooper', _ => {
-    if (back.isHovered()) {back.changeSprite('backHover')}
-    else {back.changeSprite('back')}
+  action('resetLooper', _ => {
+    if (no.isHovered()) {no.changeSprite('noHover')}
+    else {no.changeSprite('no')}
+
+    if (yes.isHovered()) {yes.changeSprite('yesHover')}
+    else {yes.changeSprite('yes')}
   })
 })
 
@@ -643,7 +695,13 @@ scene('game', () => {
   // Loop every second to add CPS to score
   loop(1, () => {
     score += cps
-    scrTxt.text = score
+
+    Utils.saveObject('score', score)
+    Utils.saveObject('cps', cps)
+    Utils.saveObject('click', baseclick)
+    Utils.saveObject('cPrice', cPrice)
+    Utils.saveObject('aPrice', aPrice)
+    Utils.saveObject('uPrice', uPrice)
   })
 
   // Rotate TechRoulette Dice and Backdrop
@@ -673,14 +731,50 @@ scene('game', () => {
       rotate(kbRotate)
     ])
 
-    if (upgradeClick.isHovered()) {upgradeClick.changeSprite('upgradeHover')}
-    else {upgradeClick.changeSprite('upgrade')}
-
-    if (upgradeAuto.isHovered()) {upgradeAuto.changeSprite('upgradeHover')}
-    else {upgradeAuto.changeSprite('upgrade')}
-
-    if (ultraUpgrade.isHovered()) {ultraUpgrade.changeSprite('upgradeHover')}
-    else {ultraUpgrade.changeSprite('upgrade')}
+    if (upgradeClick.isHovered()) {
+      upgradeClick.changeSprite('upgradeHover')
+      clickChipIcon.pos.y = (height() - width() * 0.0865) + (sprite('upgrade').height / 9)
+      clickSprite.pos.y = (height() - width() * 0.07) + (sprite('upgrade').height / 9)
+      clickPriceTxt.pos.y = (height() - width() * 0.0815) + (sprite('upgrade').height / 9)
+      clickPrice.pos.y = (height() - width() * 0.084) + (sprite('upgrade').height / 9)
+    }
+    else {
+      upgradeClick.changeSprite('upgrade')
+      clickChipIcon.pos.y = height() - width() * 0.0865
+      clickSprite.pos.y = height() - width() * 0.07
+      clickPriceTxt.pos.y = height() - width() * 0.0815
+      clickPrice.pos.y = height() - width() * 0.084
+    }
+    
+    if (upgradeAuto.isHovered()) {
+      upgradeAuto.changeSprite('upgradeHover')
+      autoSprite.pos.y = (height() - width() * 0.09) + (sprite('upgrade').height / 9)
+      autoTxt.pos.y = (height() - width() * 0.06) + (sprite('upgrade').height / 9)
+      autoPriceTxt.pos.y = (height() - width() * 0.0815) + (sprite('upgrade').height / 9)
+      autoPrice.pos.y = (height() - width() * 0.084) + (sprite('upgrade').height / 9)
+    }
+    else {
+      upgradeAuto.changeSprite('upgrade')
+      autoSprite.pos.y = height() - width() * 0.09
+      autoTxt.pos.y = height() - width() * 0.06
+      autoPriceTxt.pos.y = height() - width() * 0.0815
+      autoPrice.pos.y = height() - width() * 0.084
+    }
+    
+    if (ultraUpgrade.isHovered()) {
+      ultraUpgrade.changeSprite('upgradeHover')
+      ultraSprite.pos.y = (height() - width() * 0.09) + (sprite('upgrade').height / 9)
+      ultraTxt.pos.y = (height() - width() * 0.065) + (sprite('upgrade').height / 9)
+      ultraPriceTxt.pos.y = (height() - width() * 0.0815) + (sprite('upgrade').height / 9)
+      ultraPrice.pos.y = (height() - width() * 0.084) + (sprite('upgrade').height / 9)
+    }
+    else {
+      ultraUpgrade.changeSprite('upgrade')
+      ultraSprite.pos.y = height() - width() * 0.09
+      ultraTxt.pos.y = height() - width() * 0.065
+      ultraPriceTxt.pos.y = height() - width() * 0.0815
+      ultraPrice.pos.y = height() - width() * 0.084
+    }
 
     if (back.isHovered()) {back.changeSprite('backHover')}
     else {back.changeSprite('back')}
