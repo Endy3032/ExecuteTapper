@@ -9,9 +9,9 @@ kaboom({
 
 loadRoot('assets/')
 
-sprites = ['backdrop', 'chip', 'click', 'dice', 'lightning', 'shop', 'steak', 'upgrade', 'checkmark', 'checkmark_on', 'checkmark_clicked']
+sprites = ['backdrop', 'chip', 'click', 'dice', 'lightning', 'shop', 'steak', 'checkmark', 'checkmark_on', 'checkmark_clicked']
 audios = ['click', 'play', 'startup', 'upgrade']
-buttons = ['back', 'changelog', 'gear', 'play']
+buttons = ['back', 'changelog', 'gear', 'play', 'up', 'down', 'upgrade']
 
 sprites.forEach((name) => {loadSprite(name, 'imgs/' + name + '.png')})
 buttons.forEach((name) => {loadSprite(name, 'imgs/' + name + '.png'); loadSprite(name + 'Hover', 'imgs/' + name + '_hover.png')})
@@ -85,6 +85,12 @@ scene('menu', () => {
     origin('topright')
   ])
 
+  add([
+    text('v1.0-beta1', width() / 1920 * 25),
+    pos(width() * 0.99, height() - width() * 0.01),
+    origin('botright')
+  ])
+
   loop(3, () => {steakSprite.jump(height() * 0.3)})
 
   mouseClick(() => {
@@ -99,6 +105,12 @@ scene('menu', () => {
     Utils.saveObject('diceCount', 10)
     Utils.saveObject('showDice', true)
     Utils.saveObject('showCoin', true)
+    Utils.saveObject('score', 0)
+    Utils.saveObject('cps', 0)
+    Utils.saveObject('click', 1)
+    Utils.saveObject('cPrice', 100)
+    Utils.saveObject('aPrice', 150)
+    Utils.saveObject('uPrice', 500)
   }
 
   add(['menuLooper'])
@@ -148,7 +160,7 @@ scene('settings', () => {
   ])
 
   add([
-    text('Coin Particles Limit', width() / 1920 * 26),
+    text('Dice Particles Limit', width() / 1920 * 26),
     pos(width() * 0.2, height() * 0.625),
     origin('left')
   ])
@@ -167,12 +179,53 @@ scene('settings', () => {
     origin('right')
   ])
 
-  // coinEntry
+  coinLimit = add([
+    text(Utils.readObject('coinCount'), width() / 1920 * 26),
+    pos(width() * 0.72, height() * 0.55),
+    origin('right')
+  ])
 
-  // diceEntry
+  coinUp = add([
+    sprite('up'),
+    pos(width() * 0.75, height() * 0.545),
+    scale(height() / 1080 * 0.35),
+    origin('botright')
+  ])
+
+  coinDown = add([
+    sprite('down'),
+    pos(width() * 0.75, height() * 0.555),
+    scale(height() / 1080 * 0.35),
+    origin('topright')
+  ])
+  
+  diceLimit = add([
+    text(Utils.readObject('diceCount'), width() / 1920 * 26),
+    pos(width() * 0.72, height() * 0.625),
+    origin('right')
+  ])
+  
+  diceUp = add([
+    sprite('up'),
+    pos(width() * 0.75, height() * 0.62),
+    scale(height() / 1080 * 0.35),
+    origin('botright')
+  ])
+
+  diceDown = add([
+    sprite('down'),
+    pos(width() * 0.75, height() * 0.63),
+    scale(height() / 1080 * 0.35),
+    origin('topright')
+  ])
   
   mouseClick(() => {
     if (back.isClicked()) {go('menu')}
+
+    if (coinUp.isClicked()) {Utils.saveObject('coinCount', Utils.readObject('coinCount') + 1)}
+    if (coinDown.isClicked()) {Utils.saveObject('coinCount', Utils.readObject('coinCount') - 1)}
+    if (diceUp.isClicked()) {Utils.saveObject('diceCount', Utils.readObject('diceCount') + 1)}
+    if (diceDown.isClicked()) {Utils.saveObject('diceCount', Utils.readObject('diceCount') - 1)}
   })
   
   add(['settingsLooper'])
@@ -194,6 +247,21 @@ scene('settings', () => {
     if (diceMark.isClicked()) {diceMark.changeSprite('checkmark_clicked'); Utils.saveObject('showDice', !Utils.readObject('showDice'))}
     else if (Utils.readObject('showDice') === true) {diceMark.changeSprite('checkmark_on')}
     else {diceMark.changeSprite('checkmark')}
+    
+    if (coinUp.isHovered()) {coinUp.changeSprite('upHover')}
+    else {coinUp.changeSprite('up')}
+    
+    if (coinDown.isHovered()) {coinDown.changeSprite('downHover')}
+    else {coinDown.changeSprite('down')}
+    
+    if (diceUp.isHovered()) {diceUp.changeSprite('upHover')}
+    else {diceUp.changeSprite('up')}
+    
+    if (diceDown.isHovered()) {diceDown.changeSprite('downHover')}
+    else {diceDown.changeSprite('down')}
+
+    coinLimit.text = Utils.readObject('coinCount')
+    diceLimit.text = Utils.readObject('diceCount')
   })
 })
 
@@ -206,7 +274,7 @@ scene('changelog', () => {
   ])
 
   add([
-    text('ExecuteTapper v1.0\nChangelog', 48),
+    text('v1.0-beta1\nChangelog', 48),
     pos(width() / 2, height() / 2),
     origin('center')
   ])
@@ -229,23 +297,28 @@ scene('game', () => {
 
   layers(['particle', 'game', 'shop', 'overlay'], 'game')
   
-  cps = 0
-  baseclick = 1
+  cps = Utils.readObject('cps')
+  baseclick = Utils.readObject('click')
   click = baseclick
   upgradeCount = 1
-  score = 0
+  score = Utils.readObject('score')
+  maxDice = Utils.readObject('diceCount')
+  maxCoin = Utils.readObject('coinCount')
 
   decRotate = 0
   kbRotate = 0
 
-  cPrice = 100
-  aPrice = 150
-  uPrice = 500
+  cPrice = Utils.readObject('cPrice') // 100
+  aPrice = Utils.readObject('aPrice') // 150
+  uPrice = Utils.readObject('uPrice') // 500
   inc = 1.35
 
   isUltra = false
   ultraTime = 10
   timer = 0
+
+  showD = Utils.readObject('showDice')
+  showC = Utils.readObject('showCoin')
 
   timeBar = add([
     rect(0, 10),
@@ -440,6 +513,25 @@ scene('game', () => {
     layer('overlay')
   ])
 
+  back = add([
+    sprite('back'),
+    pos(width() * 0.03, width() * 0.03),
+    scale(width() / 1920 * 0.8),
+    origin('topleft')
+  ])
+
+  mouseClick(() => {
+    if (back.isClicked()) {
+      Utils.saveObject('score', score)
+      Utils.saveObject('cps', cps)
+      Utils.saveObject('click', baseclick)
+      Utils.saveObject('cPrice', cPrice)
+      Utils.saveObject('aPrice', aPrice)
+      Utils.saveObject('uPrice', uPrice)
+      go('menu')
+    }
+  })
+
   // Make a time bar when ultra mode is on
   function ultraify() {
     if (timer >= ultraTime) {
@@ -472,35 +564,42 @@ scene('game', () => {
       sizex = 0
       score += click
       scrTxt.text = score
-      for (i = 0; i < upgradeCount; i++) {
-        const chipper = add([
-          sprite('chip'),
-          pos(rand(96, width() - 96), rand(-128, -8)),
-          origin('center'),
-          scale(0.1),
-          color(rgba(1, 1, 1, 0.7)),
-          body(),
-          layer('particle')
-        ]);
-        wait(2, () => {destroy(chipper)})
 
-      const mini = add([
-        sprite('dice'),
-        pos(width() / 2, height() / 2 - 150),
-        origin('center'),
-        scale(0.1),
-        color(rgba(1, 1, 1, 0.7)),
-        body(),
-        layer('particle')
-      ]);
+      if (showC) {
+        for (i = 0; i < upgradeCount && i < maxCoin; i++) {
+          const chipper = add([
+            sprite('chip'),
+            pos(rand(96, width() - 96), rand(-128, -8)),
+            origin('center'),
+            scale(0.1),
+            color(rgba(1, 1, 1, 0.7)),
+            body(),
+            layer('particle')
+          ]);
+          wait(2, () => {destroy(chipper)})
+        }
+      }
 
-      mini.jump(800)
-
-      const move_rate = rand(-512, 512)
-
-      mini.action(() => {mini.move(move_rate, 0)})
-      
-      wait(2, () => {destroy(mini)})
+      if (showD) {
+        for (ii = 0; ii < upgradeCount && ii < maxDice; ii++) {
+          const mini = add([
+            sprite('dice'),
+            pos(width() / 2, height() / 2 - 150),
+            origin('center'),
+            scale(0.1),
+            color(rgba(1, 1, 1, 0.7)),
+            body(),
+            layer('particle')
+          ]);
+          
+          mini.jump(800)
+          
+          const move_rate = rand(-512, 512)
+          
+          mini.action(() => {mini.move(move_rate, 0)})
+          
+          wait(2, () => {destroy(mini)})
+        }
       }
       
     }
@@ -552,11 +651,12 @@ scene('game', () => {
   add(['clock'])
 
   action('clock', _ => {
-    destroy(dice)
     sizex++;
+    destroy(dice)
     destroy(backdrop)
     decRotate -= 1
     kbRotate = Math.PI / 2 * decRotate / 180;
+    
     backdrop = add([
       sprite('backdrop'),
       pos(width() / 2, height() / 2 - 96),
@@ -564,6 +664,7 @@ scene('game', () => {
       origin('center'),
       rotate(kbRotate/5)
     ])
+    
     dice = add([
       sprite('dice'),
       pos(width() / 2, height() / 2 - 96),
@@ -572,8 +673,17 @@ scene('game', () => {
       rotate(kbRotate)
     ])
 
-    if (upgradeClick.isHovered()) {upgradeClick.color = rgba(1, 1, 1, 0.8)}
-    else {upgradeClick.color = rgba(1, 1, 1, 1)}
+    if (upgradeClick.isHovered()) {upgradeClick.changeSprite('upgradeHover')}
+    else {upgradeClick.changeSprite('upgrade')}
+
+    if (upgradeAuto.isHovered()) {upgradeAuto.changeSprite('upgradeHover')}
+    else {upgradeAuto.changeSprite('upgrade')}
+
+    if (ultraUpgrade.isHovered()) {ultraUpgrade.changeSprite('upgradeHover')}
+    else {ultraUpgrade.changeSprite('upgrade')}
+
+    if (back.isHovered()) {back.changeSprite('backHover')}
+    else {back.changeSprite('back')}
 
     // 4x the base click rate
     if (isUltra) {click = baseclick * 4;}
