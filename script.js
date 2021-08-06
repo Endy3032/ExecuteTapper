@@ -84,7 +84,7 @@ scene('menu', () => {
   ])
 
   add([
-    text('v1', width() / 1920 * 25),
+    text('v1.0-playtest', width() / 1920 * 25),
     pos(width() * 0.99, height() - width() * 0.01),
     origin('botright')
   ])
@@ -117,6 +117,19 @@ scene('menu', () => {
     Utils.saveObject('clickstat_inc', 1.5)
     Utils.saveObject('cps_inc', 0.3)
     Utils.saveObject('madness', false)
+  }
+  else if (Utils.readObject('reset') === true) {
+    Utils.removeObject('reset')
+    Utils.saveObject('score', 0)
+    Utils.saveObject('cps', 0)
+    Utils.saveObject('click', 1)
+    Utils.saveObject('cPrice', 100)
+    Utils.saveObject('aPrice', 150)
+    Utils.saveObject('uPrice', 500)
+    Utils.saveObject('click_inc', 1.7)
+    Utils.saveObject('auto_inc', 1.5)
+    Utils.saveObject('clickstat_inc', 1.5)
+    Utils.saveObject('cps_inc', 0.3)
   }
 
   add(['menuLooper'])
@@ -406,9 +419,16 @@ scene('settings', () => {
 scene('reset', () => {
   add([
     text('Are you sure you want to reset?', width() / 1920 * 45),
+    pos(width() / 2, height() * 0.3 + height() / 1080 * 4),
+    origin('center'),
+    color(rgb(0.937, 0.349, 0.407))
+  ])
+
+  add([
+    text('Are you sure you want to reset?', width() / 1920 * 45),
     pos(width() / 2, height() * 0.3),
     origin('center'),
-    color(rgb(1, 0.411, 0.470))
+    color(rgb(1, 0.474, 0.533))
   ])
 
   yes = add([
@@ -427,7 +447,7 @@ scene('reset', () => {
 
   mouseClick(() => {
     no.isClicked() ? go('settings'): null
-    yes.isClicked() ? Utils.removeObject('didRunGame') & go('settings') : null
+    yes.isClicked() ? Utils.saveObject('reset', true) & go('settings') : null
   })
 
   add(['resetLooper'])
@@ -770,8 +790,8 @@ scene('game', () => {
     { 
       play('upgrade')
       upgradeCount < 10 ? upgradeCount++ : null
-      if (madnessMode) {cPrice += Math.floor(cPrice * click_inc); score -= cPrice; baseclick += Math.ceil(baseclick * clickstat_inc); clickPriceTxt.text = cPrice}
-      else {cPrice > max ? clickPriceTxt.text = 'Max' : (cPrice = Math.ceil(cPrice * click_inc), clickPriceTxt.text = cPrice, score -= cPrice, baseclick += Math.ceil(baseclick * clickstat_inc))}
+      if (madnessMode) {score -= cPrice; cPrice += Math.floor(cPrice * click_inc); baseclick += Math.ceil(baseclick * clickstat_inc); clickPriceTxt.text = cPrice}
+      else {cPrice > max ? clickPriceTxt.text = 'Max' : (score -= cPrice, cPrice = Math.ceil(cPrice * click_inc), clickPriceTxt.text = cPrice, baseclick += Math.ceil(baseclick * clickstat_inc))}
       click = baseclick
       clickTxt.text = click + ' /'
       scrTxt.text = score
@@ -782,8 +802,8 @@ scene('game', () => {
     if (upgradeAuto.isClicked() && score >= aPrice)
     {
       play('upgrade')
-      if (madnessMode) {aPrice = Math.ceil(aPrice * auto_inc); score -= aPrice; cps += Math.ceil(cps *= cps_inc); autoPriceTxt.text = aPrice}
-      else {aPrice > max ? autoPriceTxt.text = 'Max' : (aPrice = Math.ceil(aPrice * auto_inc), autoPriceTxt.text = aPrice, score -= aPrice, cps += Math.ceil(cps *= cps_inc))}
+      if (madnessMode) {score -= aPrice; aPrice = Math.ceil(aPrice * auto_inc); cps += Math.ceil(cps *= cps_inc); autoPriceTxt.text = aPrice}
+      else {aPrice > max ? autoPriceTxt.text = 'Max' : (aPrice = Math.ceil(aPrice * auto_inc), score -= aPrice, autoPriceTxt.text = aPrice, cps += Math.ceil(cps *= cps_inc))}
       cps == 0 ? cps = 1 : null
       auto_inc > 1.15 ? auto_inc -= 0.05 : null
       cps_inc > 0.2 ? cps_inc -= 0.01 : null
@@ -794,9 +814,9 @@ scene('game', () => {
     if (ultraUpgrade.isClicked() && score >= uPrice)
     {
       play('upgrade')
-      isUltra == true ? ultraTime += 10 : interval = setInterval(ultraify, 1000) & ultraify()
-      if (madnessMode) {Math.ceil(uPrice * 2.5); ultraPriceTxt.text = uPrice}
-      else {Math.ceil(uPrice * 2.5) > max ? ultraPriceTxt.text = 'Max' : (uPrice = Math.ceil(uPrice * 2.5), ultraPriceTxt.text = uPrice)}
+      isUltra ? ultraTime += 10 : interval = setInterval(ultraify, 1000), ultraify()
+      if (madnessMode) {score -= uPrice; uPrice = Math.ceil(uPrice * 2.5); ultraPriceTxt.text = uPrice}
+      else {score -= uPrice; uPrice = Math.ceil(uPrice * 2.5) > max ? ultraPriceTxt.text = 'Max' : (uPrice = Math.ceil(uPrice * 2.5), ultraPriceTxt.text = uPrice)}
     }
   })
 
